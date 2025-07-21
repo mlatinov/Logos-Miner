@@ -1,5 +1,4 @@
 
-
 #### Libraries ####
 library(tidyverse)
 library(gutenbergr)
@@ -137,6 +136,33 @@ schopenhauer_books_ids <- c(26586,38427,40097,40868,44929)
 # Schopenhauer Corpus
 schopenhauer_corpus <- gutenberg_download(schopenhauer_books_ids, meta_fields = "title")
 
+#### Combine all ####
+
+# Clean the Formating
+clean_format <- function(corpus){
+  corpus %>%
+    group_by(gutenberg_id,title) %>%
+    summarise(
+      text = paste(text,collapse = " ")
+    )
+} 
+
+# Save Combine data 
+clean_schopenhauer_corpus <- clean_format(schopenhauer_corpus)
+clean_machiavelli_corpus <- clean_format(machiavelli_corpus) 
+clean_aristotle_corpus <- clean_format(aristotle_corpus) 
+clean_kafka_corpus <- clean_format(kafka_corpus)
+clean_dostoevsky_corpus <- clean_format(dostoevsky_corpus) 
+clean_nietzsche_corpus <- clean_format(nietzsche_corpus)
+
+all_book <- bind_rows(
+  clean_schopenhauer_corpus %>% mutate(author = "Schopenhauer"),
+  clean_machiavelli_corpus %>% mutate(author = "Machiavelli"),
+  clean_aristotle_corpus %>% mutate(author = "Aristotle"),
+  clean_kafka_corpus %>% mutate(author = "Kafka"),
+  clean_dostoevsky_corpus %>% mutate(author = "Dostoevsky"),
+  clean_nietzsche_corpus %>% mutate(author = "Nietzsche")
+)
 
 #### Save the data ####
 write_rds(x = schopenhauer_corpus,file = "data/schopenhauer_corpus")
@@ -145,5 +171,5 @@ write_rds(x = aristotle_corpus,file = "data/aristotle_corpus")
 write_rds(x = kafka_corpus,file = "data/kafka_corpus")
 write_rds(x = dostoevsky_corpus,file = "data/dostoevsky_corpus")
 write_rds(x = nietzsche_corpus,file = "data/nietzsche_corpus")
-
+write_rds(x = all_book,file = "data/all_books")
 

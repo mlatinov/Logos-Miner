@@ -171,5 +171,7 @@ write_rds(x = aristotle_corpus,file = "data/aristotle_corpus")
 write_rds(x = kafka_corpus,file = "data/kafka_corpus")
 write_rds(x = dostoevsky_corpus,file = "data/dostoevsky_corpus")
 write_rds(x = nietzsche_corpus,file = "data/nietzsche_corpus")
-write_rds(x = all_book,file = "data/all_books")
+
+write_rds(x = all_book,file = "data/all_book")
+
 

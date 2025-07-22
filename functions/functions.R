@@ -40,6 +40,9 @@ stop_word_remove <- function(
           filter(upos %in% c("NOUN", "VERB", "ADJ", "ADV")) %>%
           filter(!tolower(lemma) %in% stop_words$word) %>%
           filter(!is.na(lemma)) %>%
+          mutate(lemma = str_remove_all(lemma, "\\b[A-Za-z]\\b")) %>%
+          mutate(lemma = str_remove_all(lemma, "\\d+")) %>%   
+          filter(str_length(lemma) > 1) %>%  
           select(doc_id, lemma) %>%
           rename(word = lemma)
 
@@ -48,6 +51,9 @@ stop_word_remove <- function(
         cleaned_df <- anno_df %>%
           filter(upos == "PROPN") %>%  # Nouns as proxy for names
           filter(!is.na(lemma)) %>%
+          mutate(lemma = str_remove_all(lemma, "\\b[A-Za-z]\\b")) %>%
+          mutate(lemma = str_remove_all(lemma, "\\d+")) %>%   
+          filter(str_length(lemma) > 1) %>%  
           select(doc_id, lemma) %>%
           rename(word = lemma)
 
@@ -56,6 +62,9 @@ stop_word_remove <- function(
         cleaned_df <- anno_df %>%
           filter(!tolower(lemma) %in% stop_words$word) %>%
           filter(!is.na(lemma)) %>%
+          mutate(lemma = str_remove_all(lemma, "\\b[A-Za-z]\\b")) %>%
+          mutate(lemma = str_remove_all(lemma, "\\d+")) %>%   
+          filter(str_length(lemma) > 2) %>%  
           select(doc_id, lemma) %>%
           rename(word = lemma)
       }
@@ -88,6 +97,14 @@ stop_word_remove <- function(
                !word2_lemma %in% stop_words$word,
                !is.na(word1_lemma),
                !is.na(word2_lemma)) %>%
+        mutate(
+          word1_lemma = str_remove_all(word1_lemma, "\\b[A-Za-z]\\b|\\d+"),
+          word2_lemma = str_remove_all(word2_lemma, "\\b[A-Za-z]\\b|\\d+")
+        )%>%
+        filter(
+          str_length(word1_lemma) > 2,
+          str_length(word2_lemma) > 2
+        ) %>%
         unite(word, word1_lemma, word2_lemma, sep = " ")
       
       # Store
@@ -231,6 +248,49 @@ tf_idfs_make <- function(data){
   return(tf_idf_list)
   
 }
+
+#### Visualizing Bigrams Function ####
+bigram_viz <- function(data = bigrams,filter_n = 2){
+  
+  # Book Names
+  book_names <- names(data)
+  
+  # Emthy list
+  bigram_list <- list()
+  
+  ## Loop over books names ##
+  for (books in book_names) {
+
+    # Subset the book
+    subset_book <- data[[books]]
+    
+    ## Count Bigrams and filter rare combinations ##
+    count_bg <- subset_book %>%
+      separate(word,c("word1","word2")) %>%
+      count(word1,word2,sort = TRUE) %>%
+      filter(n > filter_n)
+    
+    # Viz the bigrams 
+    dim <- grid::arrow(type = "closed", length = unit(.15, "inches"))
+    
+      p <- count_bg %>%
+        graph_from_data_frame() %>%
+        ggraph(layout = "fr") +
+        geom_edge_link(aes(edge_alpha = n), show.legend = FALSE, arrow = dim) +
+        geom_node_point(color = "lightblue", size = 5) +
+        geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+        theme_void()
+    
+    # Save the result 
+    bigram_list[[books]] <- p 
+    
+  }
+  # Return the result
+  return(bigram_list)
+  
+}
+
+
 
 
 

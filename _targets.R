@@ -15,6 +15,8 @@ library(gutenbergr)
 library(ggrepel)
 library(reshape2)
 library(wordcloud2)
+library(igraph)
+library(ggraph)
 
 #### Source Functions ####
 source(file = "functions/functions.R")
@@ -37,19 +39,16 @@ list(
     name = monograms_concepts,
     command = stop_word_remove(data_collect,grams ="monograms",extract = "conceptual")
   ),
-  
   ## Keep only people and places ##
   tar_target(
     name = monograms_people_places,
     command = stop_word_remove(data_collect,grams ="monograms",extract = "people_places")
   ),
-  
   ## Keep only everything ##
   tar_target(
     name = monograms_everything,
     command = stop_word_remove(data_collect,grams ="monograms",extract = "everything")
   ),
-  
   # Remove Stop Words and separate the text into bi-grams
   tar_target(
     name = bigrams,
@@ -90,9 +89,17 @@ list(
   tar_target(
     name = tf_idf_bigrams,
     command = tf_idfs_make(bigrams)
+  ),
+  
+  #### Visualizing Bigrams ####
+  tar_target(
+    name = bigram_viz_graf,
+    command = bigram_viz(bigrams)
   )
   
   #### Topic Modeling ####
   ## LDA ##
-  #### Sentiment ####
+  
+  
+  
 )

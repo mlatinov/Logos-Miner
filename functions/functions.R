@@ -91,21 +91,21 @@ stop_word_remove <- function(
       
       # Create bigrams from lemmas
       bigrams_clean <- bigrams %>%
-        mutate(word1_lemma = word1_lemma,
-               word2_lemma = word2_lemma) %>%
-        filter(!word1_lemma %in% stop_words$word,
-               !word2_lemma %in% stop_words$word,
-               !is.na(word1_lemma),
-               !is.na(word2_lemma)) %>%
         mutate(
           word1_lemma = str_remove_all(word1_lemma, "\\b[A-Za-z]\\b|\\d+"),
           word2_lemma = str_remove_all(word2_lemma, "\\b[A-Za-z]\\b|\\d+")
-        )%>%
-        filter(
-          str_length(word1_lemma) > 2,
-          str_length(word2_lemma) > 2
         ) %>%
-        unite(word, word1_lemma, word2_lemma, sep = " ")
+        filter(
+          !is.na(word1_lemma), !is.na(word2_lemma),
+          str_length(word1_lemma) > 2,
+          str_length(word2_lemma) > 2,
+          !word1_lemma %in% stop_words$word,
+          !word2_lemma %in% stop_words$word,
+          str_detect(word1_lemma, "^[a-zA-Z]+$"),
+          str_detect(word2_lemma, "^[a-zA-Z]+$")
+        ) %>%
+        unite(word, word1_lemma, word2_lemma, sep = " ") %>%
+        select(word)
       
       # Store
       cleaned_list[[current_title]] <- bigrams_clean
@@ -250,47 +250,54 @@ tf_idfs_make <- function(data){
 }
 
 #### Visualizing Bigrams Function ####
-bigram_viz <- function(data = bigrams,filter_n = 2){
+bigram_viz <- function(data = bigrams, filter_n = 2) {
   
-  # Book Names
+  # Get the names of the books
   book_names <- names(data)
   
-  # Emthy list
+  # Empty list
   bigram_list <- list()
   
-  ## Loop over books names ##
+  # Loop over every book 
   for (books in book_names) {
-
-    # Subset the book
+    
+    # Subset by the book name
     subset_book <- data[[books]]
     
-    ## Count Bigrams and filter rare combinations ##
-    count_bg <- subset_book %>%
-      separate(word,c("word1","word2")) %>%
-      count(word1,word2,sort = TRUE) %>%
-      filter(n > filter_n)
+    # Count bigrams and remove id
+    bigram_graph_data <- subset_book %>%
+      ungroup() %>% 
+      separate(word, into = c("word1", "word2"), sep = " ") %>%
+      count(word1, word2, sort = TRUE) %>%
+      filter(n > filter_n) %>%
+      select(word1,word2,n)
     
-    # Viz the bigrams 
-    dim <- grid::arrow(type = "closed", length = unit(.15, "inches"))
+    # Create a bigrams network
+    bigram_graph <- graph_from_data_frame(bigram_graph_data)
     
-      p <- count_bg %>%
-        graph_from_data_frame() %>%
-        ggraph(layout = "fr") +
-        geom_edge_link(aes(edge_alpha = n), show.legend = FALSE, arrow = dim) +
-        geom_node_point(color = "lightblue", size = 5) +
-        geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
-        theme_void()
+    # Convert to tidygraph for analysis
+    bigram_graph <- as_tbl_graph(bigram_graph)
     
-    # Save the result 
-    bigram_list[[books]] <- p 
+    # Add centrality measures 
+    bigram_graph <- bigram_graph %>%
+      mutate(degree = centrality_degree())
     
+    # Plot the graf
+    p <- ggraph(bigram_graph, layout = "fr") +
+      geom_edge_link(aes(width = n), alpha = 0.4, color = "steelblue") +
+      scale_edge_width(range = c(0.3, 2)) +
+      geom_node_point(aes(size = degree), color = "steelblue") +
+      scale_size(range = c(3, 10)) +
+      geom_node_text(aes(label = name),
+                     repel = TRUE, size = 3, family = "Arial") +
+      theme_graph()
+    
+    # Save the result
+    bigram_list[[books]] <- p
   }
-  # Return the result
-  return(bigram_list)
   
+  # Return the plot 
+  return(bigram_list)
 }
-
-
-
 
 

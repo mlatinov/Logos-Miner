@@ -16,6 +16,7 @@ library(ggrepel)
 library(reshape2)
 library(wordcloud2)
 library(igraph)
+library(tidygraph)
 library(ggraph)
 
 #### Source Functions ####
@@ -98,8 +99,7 @@ list(
   )
   
   #### Topic Modeling ####
+  
   ## LDA ##
-  
-  
   
 )
